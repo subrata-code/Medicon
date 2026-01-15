@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { axiosInstance } from "../libs/axios";
+import { toast } from "react-hot-toast";
 
 const UserSignup = () => {
   const [formData, setFormData] = useState({
@@ -8,6 +9,8 @@ const UserSignup = () => {
     phonenumber: "",
     password: "",
     profileimage: null,
+    secNumber: "",
+    geoLocation: null,
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -25,13 +28,32 @@ const UserSignup = () => {
     setIsLoading(true);
     setError("");
 
-    const form = new FormData();
-    for (const key in formData) {
-      form.append(key, formData[key]);
-    }
-    form.append("role", "user");
-
     try {
+      // Get user's location first
+      const position = await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject);
+      });
+
+      // Create FormData after getting location
+      const form = new FormData();
+
+      // Add all form fields
+      form.append("name", formData.name);
+      form.append("email", formData.email);
+      form.append("phonenumber", formData.phonenumber);
+      form.append("password", formData.password);
+      form.append("secNumber", formData.secNumber);
+      if (formData.profileimage) {
+        form.append("profileimage", formData.profileimage);
+      }
+
+      // Add location
+      form.append(
+        "geoLocation",
+        `${position.coords.latitude},${position.coords.longitude}`
+      );
+      form.append("role", "user");
+
       const response = await axiosInstance.post("/api/v1/signup-user", form, {
         headers: {
           "Content-Type": "multipart/form-data",
@@ -48,9 +70,13 @@ const UserSignup = () => {
       }
     } catch (error) {
       console.error("Error during signup:", error);
-      setError(
-        error.response?.data?.message || "An error occurred during signup."
-      );
+      if (error.name === "GeolocationPositionError") {
+        toast.error("Please enable location services to continue");
+      } else {
+        setError(
+          error.response?.data?.message || "An error occurred during signup."
+        );
+      }
     } finally {
       setIsLoading(false);
     }
@@ -153,6 +179,25 @@ const UserSignup = () => {
 
             <div>
               <label
+                htmlFor="secNumber"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Security Number
+              </label>
+              <input
+                type="text"
+                id="secNumber"
+                name="secNumber"
+                value={formData.secNumber}
+                onChange={handleChange}
+                required
+                placeholder="Enter your secondary contact number"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+              />
+            </div>
+
+            <div>
+              <label
                 htmlFor="profilepic"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
@@ -172,7 +217,7 @@ const UserSignup = () => {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                className="w-full cursor-pointer flex justify-center py-2.5 px-4 border border-transparent rounded-md text-white bg-blue-600 hover:bg-blue-700"
               >
                 {isLoading ? "Processing..." : "Sign Up"}
               </button>

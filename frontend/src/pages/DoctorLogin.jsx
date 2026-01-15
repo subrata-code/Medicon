@@ -2,6 +2,7 @@ import { HeartHandshake } from "lucide-react";
 import React, { useState } from "react";
 import { axiosInstance } from "../libs/axios.js";
 import { toast } from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
 
 function DoctorLogin() {
   const [formData, setFormData] = useState({
@@ -10,6 +11,7 @@ function DoctorLogin() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -21,6 +23,7 @@ function DoctorLogin() {
     setIsLoading(true);
 
     try {
+      // First API call - Login
       const response = await axiosInstance.post(
         "/api/v1/login-doctor",
         formData,
@@ -32,19 +35,58 @@ function DoctorLogin() {
         }
       );
 
-      const data = await response.data;
+      console.log("Login Response:", response.data);
+      const data = response.data;
+      const doctorId = data.data._id;
 
       if (response.status === 200) {
-        toast.success("Login Successfull");
-        localStorage.setItem("doctortoken", data.token);
-        window.location.href = "/doctorDashboard";
+        try {
+          // Second API call - Update online status
+          const statusResponse = await axiosInstance.post(
+            "/api/v1/update-doctor-status",
+            {
+              doctorId,
+              isOnline: true,
+              isBusy: false,
+            }
+          );
+
+          console.log("Status Update Response:", statusResponse.data);
+
+          // Verify the update by fetching the doctor's current status
+          const verifyResponse = await axiosInstance.get(
+            `/api/v1/doctors/${doctorId}`
+          );
+          console.log("Doctor's Current Status:", {
+            isOnline: verifyResponse.data.data.isOnline,
+            isBusy: verifyResponse.data.data.isBusy,
+          });
+
+          if (statusResponse.data.status === "OK") {
+            toast.success("Login Successful");
+            localStorage.setItem("doctortoken", data.token);
+            localStorage.setItem("doctorId", doctorId);
+            navigate(`/doctorDashboard/${doctorId}`);
+          } else {
+            console.warn("Online status not updated:", statusResponse.data);
+            toast.warning("Logged in but status update failed");
+            navigate(`/doctorDashboard/${doctorId}`);
+          }
+        } catch (statusError) {
+          console.error(
+            "Error updating online status:",
+            statusError.response?.data || statusError
+          );
+          // Continue with login even if status update fails
+          toast.warning("Logged in but status update failed");
+          navigate(`/doctorDashboard/${doctorId}`);
+        }
       } else {
-        console.error("Login failed:", data);
         toast.error("Login Failed");
       }
     } catch (error) {
-      console.error("Error during login:", error);
-      toast("An error occurred during login.");
+      console.error("Login Error:", error.response?.data || error);
+      toast.error(error.response?.data?.message || "An error occurred during login");
     } finally {
       setIsLoading(false);
     }
@@ -105,7 +147,7 @@ function DoctorLogin() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out"
+            className="w-full cursor-pointer flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out"
           >
             {isLoading ? "Logging in..." : "Log In"}
           </button>

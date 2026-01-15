@@ -26,6 +26,7 @@ const adminLoginController = async (req, res) => {
                     _id: Admin._id,
                     name: Admin.name,
                     email: Admin.email,
+                    role: Admin.role || "admin",
                 };
                 const token = await JWT.sign(playLoad, configs.JWT_SECRET);
 

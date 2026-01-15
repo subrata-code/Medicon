@@ -2,10 +2,14 @@ import React from "react";
 import heroImg from "../assets/hero-sec.svg";
 import { Heart, CalendarCheck, Headphones, UserCheck } from "lucide-react";
 import Footer from "../components/Footer";
+import ChatInterface from "../components/ChatInterface";
 
 const HomePage = () => {
+  localStorage.clear();
   return (
-    <main className="font-sans text-gray-800">
+    <main className="font-sans text-gray-800 relative">
+      {/* Chatbot  */}
+      <ChatInterface />
       {/* Hero Section */}
       <section
         id="hero"
@@ -35,57 +39,6 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* Feature Section */}
-      <section className="bg-gray-50 py-16">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-semibold text-center mb-12 text-gray-800">
-            Our Features
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div className="bg-white p-8 rounded-lg shadow-sm hover:shadow-md transition duration-300">
-              <div className="flex justify-center mb-6">
-                <Heart className="text-4xl text-blue-600" />
-              </div>
-              <h3 className="text-xl font-semibold mb-3">
-                AI Health Diagnosis
-              </h3>
-              <p className="text-gray-600 leading-relaxed">
-                Cutting-edge AI technology for accurate health diagnostics.
-              </p>
-            </div>
-            <div className="bg-white p-8 rounded-lg shadow-sm hover:shadow-md transition duration-300">
-              <div className="flex justify-center mb-6">
-                <CalendarCheck className="text-4xl text-blue-600" />
-              </div>
-              <h3 className="text-xl font-semibold mb-3">
-                Appointment Booking
-              </h3>
-              <p className="text-gray-600 leading-relaxed">
-                Easy and efficient appointment booking system.
-              </p>
-            </div>
-            <div className="bg-white p-8 rounded-lg shadow-sm hover:shadow-md transition duration-300">
-              <div className="flex justify-center mb-6">
-                <Headphones className="text-4xl text-blue-600" />
-              </div>
-              <h3 className="text-xl font-semibold mb-3">24/7 Support</h3>
-              <p className="text-gray-600 leading-relaxed">
-                Round-the-clock customer support for all your queries.
-              </p>
-            </div>
-            <div className="bg-white p-8 rounded-lg shadow-sm hover:shadow-md transition duration-300">
-              <div className="flex justify-center mb-6">
-                <UserCheck className="text-4xl text-blue-600" />
-              </div>
-              <h3 className="text-xl font-semibold mb-3">Personalized Plans</h3>
-              <p className="text-gray-600 leading-relaxed">
-                Customized health plans tailored to individual needs.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Premium Section */}
       <section className="bg-gradient-to-br from-blue-100 to-blue-50 py-16 mb-8">
         <div className="container mx-auto px-4">
@@ -100,7 +53,8 @@ const HomePage = () => {
                 Advanced Diagnostics
               </h3>
               <p className="text-gray-600 leading-relaxed">
-                Get detailed health diagnostics with our premium AI technology.
+                Get detailed health diagnostics with our premium AI technology
+                in emergency .
               </p>
             </div>
             <div className="bg-white p-8 rounded-xl shadow-md hover:shadow-lg transition duration-300">
@@ -113,11 +67,11 @@ const HomePage = () => {
             </div>
             <div className="bg-white p-8 rounded-xl shadow-md hover:shadow-lg transition duration-300">
               <h3 className="text-xl font-semibold mb-3 text-blue-700">
-                Exclusive Health Plans
+                Video Consultation
               </h3>
               <p className="text-gray-600 leading-relaxed">
-                Access exclusive, tailored health plans designed for optimal
-                care.
+                Video consultation allows patients to consult doctors through
+                secure live video calls.
               </p>
             </div>
             <div className="bg-white p-8 rounded-xl shadow-md hover:shadow-lg transition duration-300">
@@ -127,6 +81,62 @@ const HomePage = () => {
               <p className="text-gray-600 leading-relaxed">
                 Work with a personal health coach to achieve your wellness
                 goals.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Feature Section */}
+      <section className="bg-gray-50 py-16">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl font-semibold text-center mb-12 text-gray-800">
+            Other Features
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div className="bg-white p-8 rounded-lg shadow-sm hover:shadow-md transition duration-300">
+              <div className="flex justify-center mb-6">
+                <Heart className="text-4xl text-blue-600" />
+              </div>
+              <h3 className="text-2xl font-semibold mb-3 text-center">
+                AI Health Diagnosis
+              </h3>
+              <p className="text-gray-600 leading-relaxed text-center text-lg px-6">
+                Cutting-edge AI technology for accurate health diagnostics.
+              </p>
+            </div>
+            <div className="bg-white p-8 rounded-lg shadow-sm hover:shadow-md transition duration-300">
+              <div className="flex justify-center mb-6">
+                <CalendarCheck className="text-4xl text-blue-600" />
+              </div>
+              <h3 className="text-2xl font-semibold mb-3 text-center">
+                Appointment Booking
+              </h3>
+              <p className="text-gray-600 leading-relaxed text-center text-lg px-6">
+                Easy and efficient appointment booking system.
+              </p>
+            </div>
+            <div className="bg-white p-8 rounded-lg shadow-sm hover:shadow-md transition duration-300">
+              <div className="flex justify-center mb-6">
+                <Headphones className="text-4xl text-blue-600" />
+              </div>
+              <h3 className="text-2xl text-center font-semibold mb-3">
+                Shift Appointment
+              </h3>
+              <p className="text-gray-600 leading-relaxed text-center text-lg px-6">
+                Shift appointment allows patients to reschedule their booked
+                appointments.
+              </p>
+            </div>
+            <div className="bg-white p-8 rounded-lg shadow-sm hover:shadow-md transition duration-300">
+              <div className="flex justify-center mb-6">
+                <UserCheck className="text-4xl text-blue-600" />
+              </div>
+              <h3 className="text-2xl text-center font-semibold mb-3">
+                24/7 Support
+              </h3>
+              <p className="text-gray-600 leading-relaxed text-center text-lg px-6">
+                Round-the-clock customer support for all your queries.
               </p>
             </div>
           </div>

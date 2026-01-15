@@ -1,9 +1,11 @@
 import { StatusCodes } from "http-status-codes";
 import Models from "../../models/index.models.js";
+import redis from "../../Redis/client.js";
+import MailTemplates from "../../utils/index.utils.js";
+import sendMail from "../../services/sendMail.js";
 
 const updateDoctorDetailsController = async (req, res, next) => {
   try {
-    // Get doctor ID from either req.user.id or req.doctor._id
     const doctorId = req.user?.id || req.doctor?._id;
 
     if (!doctorId) {
@@ -15,10 +17,10 @@ const updateDoctorDetailsController = async (req, res, next) => {
 
     const updatedDetails = { ...req.body };
 
-    // Handle consultationFee for removing any extra sign from fee
+    // ✅ Convert consultationFee to number safely
     if (updatedDetails.consultationFee !== undefined) {
       const fee = Number(
-        updatedDetails.consultationFee.replace(/[^0-9.-]+/g, "")
+        String(updatedDetails.consultationFee).replace(/[^0-9.-]+/g, "")
       );
       if (isNaN(fee)) {
         return res.status(StatusCodes.BAD_REQUEST).json({
@@ -29,6 +31,26 @@ const updateDoctorDetailsController = async (req, res, next) => {
       updatedDetails.consultationFee = fee;
     }
 
+    // ✅ Convert experience string like "20 years" to 20
+    if (updatedDetails.experience !== undefined) {
+      const exp = Number(
+        String(updatedDetails.experience).replace(/[^0-9.-]+/g, "")
+      );
+      if (isNaN(exp)) {
+        return res.status(StatusCodes.BAD_REQUEST).json({
+          status: "Failed",
+          message: "Invalid experience value",
+        });
+      }
+      updatedDetails.experience = exp;
+    }
+
+    // ✅ Ensure education is a string
+    if (updatedDetails.education !== undefined) {
+      updatedDetails.education = String(updatedDetails.education);
+    }
+
+    // ✅ Ensure specialization & languages are arrays
     if (updatedDetails.languages && !Array.isArray(updatedDetails.languages)) {
       updatedDetails.languages = [updatedDetails.languages];
     }
@@ -40,6 +62,7 @@ const updateDoctorDetailsController = async (req, res, next) => {
       updatedDetails.specialization = [updatedDetails.specialization];
     }
 
+    // ✅ Update in database
     const updatedDoctorDetails = await Models.DoctorModel.findByIdAndUpdate(
       doctorId,
       { $set: updatedDetails },
@@ -55,6 +78,22 @@ const updateDoctorDetailsController = async (req, res, next) => {
         message: "Doctor not found",
       });
     }
+
+    const emailData = MailTemplates.UpdateDoctorDetsMailContent({
+      email: updatedDoctorDetails.email,
+      doctorName: updatedDoctorDetails.name,
+      updatedFields: req.body
+    });
+
+    // console.log(emailData);
+
+    await sendMail(emailData, (error, info) => {
+      if (error) {
+        console.log("Mail Sending Error: " + error);
+      } else {
+        console.log("Mail Sent: " + info);
+      }
+    });
 
     return res.status(StatusCodes.OK).json({
       status: "Success",

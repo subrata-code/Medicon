@@ -80,7 +80,7 @@ const LoginDashboard = () => {
           </div>
 
           {/* Admin Login Link */}
-          <Link to="/userLogin" className="text-blue-600 hover:underline mt-2">
+          <Link to="/adminLogin" className="text-blue-600 hover:underline mt-2">
             Admin Login here
           </Link>
         </div>

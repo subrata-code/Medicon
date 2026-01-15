@@ -1,0 +1,43 @@
+# Node.js dependencies
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Logs
+logs
+*.log
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Build artifacts
+dist
+build
+
+# Temporary files and directories
+*.tmp
+*.temp
+*.swp
+*.swo
+*.bak
+*.orig
+.DS_Store
+Thumbs.db
+
+# Git-related files
+.git
+.gitignore
+
+# Docker-related files
+.dockerignore
+Dockerfile*
+
+# IDE and editor files
+.vscode
+.idea
+*.iml
+
+# Public and static files (if not needed in the container)
+public/uploads

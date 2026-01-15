@@ -1,24 +1,45 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { User, AlertCircle } from "lucide-react";
 import axiosInstance from "../libs/axios";
+import { toast } from "react-hot-toast";
 
 function DoctorSignup() {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    location: "",
+    address: "",
     phonenumber: "",
     password: "",
     profileimage: null,
     registrationId: "",
     specialization: [],
+    geoLocation: null,
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // Get location when component mounts
+  useEffect(() => {
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setFormData((prev) => ({
+            ...prev,
+            geoLocation: `${position.coords.latitude},${position.coords.longitude}`,
+          }));
+        },
+        (error) => {
+          console.error("Error getting location:", error);
+          toast.error("Please enable location services to continue");
+        }
+      );
+    } else {
+      toast.error("Geolocation is not supported by your browser");
+    }
+  }, []);
+
   const handleChange = (e) => {
     const { name, value, type, files } = e.target;
-    console.log(`Field changed: ${name}, Value: ${value}`);
     setFormData((prevData) => ({
       ...prevData,
       [name]: type === "file" ? files[0] : value,
@@ -29,7 +50,6 @@ function DoctorSignup() {
     const selectedOptions = Array.from(e.target.selectedOptions).map(
       (option) => option.value
     );
-    console.log(`Specializations selected: ${selectedOptions}`);
     setFormData((prevData) => ({
       ...prevData,
       specialization: selectedOptions,
@@ -41,19 +61,31 @@ function DoctorSignup() {
     setIsLoading(true);
     setError("");
 
-    const form = new FormData();
-    for (const key in formData) {
-      if (key === "specialization") {
-        formData[key].forEach((spec) => {
-          form.append("specialization", spec);
-        });
-      } else {
-        form.append(key, formData[key]);
-      }
+    if (!formData.geoLocation) {
+      toast.error("Please enable location services to continue");
+      setIsLoading(false);
+      return;
     }
-    form.append("role", "doctor");
 
-    console.log("Submitting form data:", formData);
+    const form = new FormData();
+
+    // Add all form fields
+    form.append("name", formData.name);
+    form.append("email", formData.email);
+    form.append("phonenumber", formData.phonenumber);
+    form.append("password", formData.password);
+    form.append("registrationId", formData.registrationId);
+    form.append("address", formData.address);
+    formData.specialization.forEach((spec) => {
+      form.append("specialization", spec);
+    });
+    if (formData.profileimage) {
+      form.append("profileimage", formData.profileimage);
+    }
+
+    // Add location data
+    form.append("geoLocation", formData.geoLocation);
+    form.append("role", "doctor");
 
     try {
       const response = await axiosInstance.post("/api/v1/signup-doctor", form, {
@@ -62,19 +94,17 @@ function DoctorSignup() {
         },
       });
 
-      const data = response.data;
-      console.log("Response from signup:", data);
-
-      if (data.status === "OK") {
-        console.log("Signup successful");
+      if (response.status === 201) {
+        toast.success("Signup successful!");
         window.location.href = "/doctorLogin";
       } else {
-        setError(data.message || "Signup Failed");
-        console.error("Signup failed:", data);
+        setError(response.data.message || "Signup Failed");
       }
     } catch (error) {
       console.error("Error during signup:", error);
-      setError("An error occurred during signup.");
+      setError(
+        error.response?.data?.message || "An error occurred during signup."
+      );
     } finally {
       setIsLoading(false);
     }
@@ -121,7 +151,7 @@ function DoctorSignup() {
                 onChange={handleChange}
                 required
                 placeholder="Enter your full name"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-100"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
               />
             </div>
 
@@ -140,26 +170,26 @@ function DoctorSignup() {
                 onChange={handleChange}
                 required
                 placeholder="Enter your email"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-100"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
               />
             </div>
 
             <div>
               <label
-                htmlFor="location"
+                htmlFor="address"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
                 Address
               </label>
               <input
                 type="text"
-                id="location"
-                name="location"
-                value={formData.location}
+                id="address"
+                name="address"
+                value={formData.address}
                 onChange={handleChange}
                 required
-                placeholder="Enter your address"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-100"
+                placeholder="Enter your clinic address"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
               />
             </div>
           </div>
@@ -180,7 +210,7 @@ function DoctorSignup() {
                 onChange={handleChange}
                 required
                 placeholder="Enter your mobile number"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-100"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
               />
             </div>
 
@@ -199,7 +229,7 @@ function DoctorSignup() {
                 onChange={handleChange}
                 required
                 placeholder="Create a password"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-100"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
               />
             </div>
           </div>
@@ -237,7 +267,7 @@ function DoctorSignup() {
                 onChange={handleChange}
                 required
                 placeholder="Enter your medical License No."
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-100"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
               />
             </div>
           </div>
@@ -256,7 +286,7 @@ function DoctorSignup() {
               onChange={handleSpecializationChange}
               required
               multiple
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-700 min-h-32"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 min-h-32"
             >
               <option value="General Physician">General Physician</option>
               <option value="Cardiology">Cardiology</option>
@@ -290,7 +320,7 @@ function DoctorSignup() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out"
+              className="w-full cursor-pointer flex justify-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out"
             >
               {isLoading ? "Processing..." : "Sign Up"}
             </button>
