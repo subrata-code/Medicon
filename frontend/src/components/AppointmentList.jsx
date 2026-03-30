@@ -11,7 +11,6 @@ import {
   RefreshCw,
   Video,
 } from "lucide-react";
-import axiosInstance from "../libs/axios";
 import { toast } from "react-hot-toast";
 
 const AppointmentList = ({ doctorId, Token }) => {
@@ -20,30 +19,51 @@ const AppointmentList = ({ doctorId, Token }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (doctorId && Token) {
+    if (doctorId) {
       getAppointments();
     }
   }, [doctorId, Token]);
 
-  const getAppointments = async () => {
+  useEffect(() => {
+    if (!doctorId) return;
+    const id = setInterval(() => getAppointments(), 2500);
+    return () => clearInterval(id);
+  }, [doctorId]);
+
+  const getAppointments = () => {
     setIsLoading(true);
-    try {
-      const response = await axiosInstance.get(
-        `/api/v1/get-appointments-doctor/${doctorId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${Token}`,
+    setTimeout(() => {
+      const currentId = String(doctorId);
+      const bookings = JSON.parse(localStorage.getItem("bookings")) || [];
+      const appointments = JSON.parse(localStorage.getItem("appointments")) || [];
+      const map = new Map();
+      [...appointments, ...bookings].forEach((booking) => {
+        if (!booking || booking.id == null) return;
+        if (String(booking.doctorId) !== currentId) return;
+        map.set(booking.id, booking);
+      });
+      const merged = Array.from(map.values());
+      const mapped = merged.map((booking) => ({
+          _id: booking.id,
+          userId: {
+            name: booking.patientName,
+            phonenumber: "+91-9000000000",
+            email: "user@medicon.com",
           },
-        }
-      );
-      setAppointments(response.data.appointments);
-      console.log("Appointments API : ", response.data.appointments);
-    } catch (error) {
-      console.error("Error fetching appointments:", error);
-      toast.error("Failed to fetch appointments");
-    } finally {
+          doctorId: booking.doctorId,
+          date: booking.date,
+          startTime: booking.preferredSlot?.split(" - ")[0] || "10:00 AM",
+          endTime: booking.preferredSlot?.split(" - ")[1] || "10:30 AM",
+          status:
+            booking.status === "approved" || booking.status === "accepted"
+              ? "confirmed"
+              : booking.status === "rejected"
+              ? "cancelled"
+              : "pending",
+        }));
+      setAppointments(mapped);
       setIsLoading(false);
-    }
+    }, 300);
   };
 
   const getStatusColor = (status) => {
@@ -64,23 +84,9 @@ const AppointmentList = ({ doctorId, Token }) => {
     }
   };
 
-  const handleVideocall = async (appointmentId, doctorId, userId) => {
-    try {
-      // console.log("Appointment Id: ", appointmentId);
-      // console.log("Doctor Id: ", doctorId);
-      const response = await axiosInstance.post("/api/v1/video-call/request", {
-        appointmentId,
-        doctorId,
-      });
-
-      if (response.data) {
-        toast.success("VideoCall link send to email successfully");
-        navigate(`/videocall/${appointmentId}`);
-      }
-    } catch (error) {
-      console.log(error);
-      toast.error("Problem generating appointment link");
-    }
+  const handleVideocall = async (appointmentId) => {
+    toast.success("VideoCall link generated successfully");
+    navigate(`/videocall/${appointmentId}`);
   };
 
   const handleRefresh = () => {

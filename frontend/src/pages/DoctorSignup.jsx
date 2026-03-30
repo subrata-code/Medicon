@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { User, AlertCircle } from "lucide-react";
-import axiosInstance from "../libs/axios";
 import { toast } from "react-hot-toast";
 
 function DoctorSignup() {
@@ -61,53 +60,31 @@ function DoctorSignup() {
     setIsLoading(true);
     setError("");
 
-    if (!formData.geoLocation) {
-      toast.error("Please enable location services to continue");
-      setIsLoading(false);
-      return;
-    }
-
-    const form = new FormData();
-
-    // Add all form fields
-    form.append("name", formData.name);
-    form.append("email", formData.email);
-    form.append("phonenumber", formData.phonenumber);
-    form.append("password", formData.password);
-    form.append("registrationId", formData.registrationId);
-    form.append("address", formData.address);
-    formData.specialization.forEach((spec) => {
-      form.append("specialization", spec);
-    });
-    if (formData.profileimage) {
-      form.append("profileimage", formData.profileimage);
-    }
-
-    // Add location data
-    form.append("geoLocation", formData.geoLocation);
-    form.append("role", "doctor");
-
-    try {
-      const response = await axiosInstance.post("/api/v1/signup-doctor", form, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
-
-      if (response.status === 201) {
-        toast.success("Signup successful!");
-        window.location.href = "/doctorLogin";
-      } else {
-        setError(response.data.message || "Signup Failed");
-      }
-    } catch (error) {
-      console.error("Error during signup:", error);
-      setError(
-        error.response?.data?.message || "An error occurred during signup."
+    setTimeout(() => {
+      const existing = JSON.parse(localStorage.getItem("doctorRequests")) || [];
+      const newDoctor = {
+        id: Date.now().toString(),
+        name: formData.name,
+        email: formData.email,
+        address: formData.address,
+        phonenumber: formData.phonenumber,
+        password: formData.password,
+        registrationId: formData.registrationId,
+        specialization: formData.specialization,
+        geoLocation: formData.geoLocation || "0,0",
+        status: "pending",
+        profilepic: null,
+        createdAt: new Date().toLocaleString(),
+      };
+      localStorage.setItem(
+        "doctorRequests",
+        JSON.stringify([...existing, newDoctor])
       );
-    } finally {
+      alert("Signup Successful");
+      alert("Your account is under admin approval");
       setIsLoading(false);
-    }
+      window.dispatchEvent(new Event("demoDataUpdated"));
+    }, 1000);
   };
 
   return (

@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { axiosInstance } from "../libs/axios";
-import { toast } from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
 
 const UserSignup = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -28,58 +28,29 @@ const UserSignup = () => {
     setIsLoading(true);
     setError("");
 
-    try {
-      // Get user's location first
-      const position = await new Promise((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject);
-      });
-
-      // Create FormData after getting location
-      const form = new FormData();
-
-      // Add all form fields
-      form.append("name", formData.name);
-      form.append("email", formData.email);
-      form.append("phonenumber", formData.phonenumber);
-      form.append("password", formData.password);
-      form.append("secNumber", formData.secNumber);
-      if (formData.profileimage) {
-        form.append("profileimage", formData.profileimage);
-      }
-
-      // Add location
-      form.append(
-        "geoLocation",
-        `${position.coords.latitude},${position.coords.longitude}`
+    setTimeout(() => {
+      const existing = JSON.parse(localStorage.getItem("patients")) || [];
+      const newPatient = {
+        id: Date.now().toString(),
+        name: formData.name,
+        email: formData.email,
+        phonenumber: formData.phonenumber,
+        password: formData.password,
+        secNumber: formData.secNumber,
+        status: "active",
+        createdAt: new Date().toLocaleString(),
+      };
+      localStorage.setItem(
+        "patients",
+        JSON.stringify([...existing, newPatient])
       );
-      form.append("role", "user");
-
-      const response = await axiosInstance.post("/api/v1/signup-user", form, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
-
-      if (response.status === 201) {
-        // 201 means created successfully
-        console.log("Signup successful");
-        window.location.href = "/userLogin";
-      } else {
-        setError(response.data.message || "Signup Failed");
-        console.error("Signup failed:", response.data);
-      }
-    } catch (error) {
-      console.error("Error during signup:", error);
-      if (error.name === "GeolocationPositionError") {
-        toast.error("Please enable location services to continue");
-      } else {
-        setError(
-          error.response?.data?.message || "An error occurred during signup."
-        );
-      }
-    } finally {
+      localStorage.setItem("currentPatientId", newPatient.id);
+      localStorage.setItem("role", "user");
+      alert("Signup Successful");
       setIsLoading(false);
-    }
+      navigate("/user");
+      window.dispatchEvent(new Event("demoDataUpdated"));
+    }, 1000);
   };
 
   return (

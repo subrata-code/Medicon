@@ -1,7 +1,5 @@
 import { User2 } from "lucide-react";
 import React, { useState } from "react";
-import axiosInstance from "../libs/axios";
-import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 
 function UserLogin() {
@@ -23,40 +21,35 @@ function UserLogin() {
     setIsLoading(true);
     setError("");
 
-    try {
-      const response = await axiosInstance.post(
-        "/api/v1/login-user",
-        formData,
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-          withCredentials: true,
-        }
-      );
+    // Fake demo login with hardcoded credentials
+    setTimeout(() => {
+      const { email, password } = formData;
 
-      console.log("API Response:", response.data); // 🔍 Debugging
-      const data = response.data;
-      const userId = data.data._id;
-
-      if (response.status === 200) {
-        localStorage.setItem("usertoken", data.token);
-        localStorage.setItem("userId", userId);
-        localStorage.setItem("secNumber", response.data.data.secNumber);
-        toast.success("Login successful");
-        navigate(`/patientDashboard/${userId}`);
-      } else {
-        setError(response.data.message || "Login Failed");
-        console.error("Login failed:", response.data);
+      if (email === "user@medicon.com" && password === "user123") {
+        localStorage.setItem("role", "user");
+        localStorage.setItem("currentPatientId", "demo-user");
+        alert("Login Successful");
+        navigate("/user");
+        setIsLoading(false);
+        return;
       }
-    } catch (error) {
-      console.error("Error during login:", error);
-      setError(
-        error.response?.data?.message || "An error occurred during login."
+
+      const patients = JSON.parse(localStorage.getItem("patients")) || [];
+      const match = patients.find(
+        (p) => p.email === email && p.password === password && p.status === "active"
       );
-    } finally {
+      if (match) {
+        localStorage.setItem("role", "user");
+        localStorage.setItem("currentPatientId", match.id);
+        alert("Login Successful");
+        navigate("/user");
+      } else {
+        setError("Invalid demo credentials");
+        alert("Invalid demo credentials");
+      }
+
       setIsLoading(false);
-    }
+    }, 1000);
   };
 
   return (

@@ -1,17 +1,10 @@
 import axios from "axios";
 import toast from "react-hot-toast";
 
-const baseURL =
-  import.meta.env.VITE_MODE === "development"
-    ? import.meta.env.VITE_DEVELOPMENT_URL
-    : `https://medicon-nw25.onrender.com`;
-
-console.log("Current environment:", import.meta.env.VITE_MODE);
-// console.log("Using API baseURL:", baseURL);
-
+// Demo/offline mode: no backend base URL. Kept for compatibility if re-imported.
 export const axiosInstance = axios.create({
-  baseURL,
-  withCredentials: true,
+  baseURL: "",
+  withCredentials: false,
 });
 
 axiosInstance.interceptors.response.use(

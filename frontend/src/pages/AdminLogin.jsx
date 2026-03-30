@@ -1,7 +1,5 @@
 import { User2 } from "lucide-react";
 import React, { useState } from "react";
-import axiosInstance from "../libs/axios";
-import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 
 function AdminLogin() {
@@ -23,37 +21,21 @@ function AdminLogin() {
     setIsLoading(true);
     setError("");
 
-    try {
-      const response = await axiosInstance.post(
-        "/api/v1/login-admin",
-        formData,
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-          withCredentials: true,
-        }
-      );
+    // Fake demo login with hardcoded credentials
+    setTimeout(() => {
+      const { email, password } = formData;
 
-      console.log("API Response:", response.data); // 🔍 Debugging
-      const data = response.data;
-
-      if (response.status === 200) {
-        toast.success("Login successful");
-        localStorage.setItem("admintoken", data.token);
-        navigate(`/adminDashboard`);
+      if (email === "admin@medicon.com" && password === "admin123") {
+        localStorage.setItem("role", "admin");
+        alert("Login Successful");
+        navigate("/admin");
       } else {
-        setError(response.data.message || "Login Failed");
-        console.error("Login failed:", response.data);
+        setError("Invalid demo credentials");
+        alert("Invalid demo credentials");
       }
-    } catch (error) {
-      console.error("Error during login:", error);
-      setError(
-        error.response?.data?.message || "An error occurred during login."
-      );
-    } finally {
+
       setIsLoading(false);
-    }
+    }, 1000);
   };
 
   return (

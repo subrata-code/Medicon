@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Newspaper, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
-import axiosInstance from "../libs/axios";
 
 const MedicalRecords = ({ userId, userToken }) => {
   const [files, setFiles] = useState(null);
@@ -12,41 +11,21 @@ const MedicalRecords = ({ userId, userToken }) => {
   const fileInputRef = useRef(null);
 
   useEffect(() => {
-    if (userId && userToken) {
+    if (userId) {
       fetchMedicalRecords();
     }
   }, [userId, userToken]);
 
-  const fetchMedicalRecords = async () => {
-    try {
-      const response = await axiosInstance.get(
-        "/api/v1/get-medical-certificate",
-        {
-          headers: {
-            Authorization: `Bearer ${userToken}`,
-          },
-          withCredentials: true,
-        }
-      );
-
-      console.log(response.data.data);
-      setValue(response.data.data);
-
-      if (response.data && response.data.status === "OK") {
-        const files = response.data.data?.files || [];
-        setRecords(files);
-        if (files.length === 0) {
-          toast("No records found");
-        }
-      } else {
-        toast.error(response.data?.message || "Failed to fetch records");
-      }
-    } catch (error) {
-      console.error("Error fetching medical records:", error);
-      toast.error(
-        error.response?.data?.message || "Failed to load medical records"
-      );
-    }
+  const fetchMedicalRecords = () => {
+    const files = JSON.parse(localStorage.getItem("files")) || [];
+    setValue({ createdAt: new Date().toISOString() });
+    setRecords(
+      files.map((file) => ({
+        _id: file.id,
+        filename: file.name,
+        fileURL: file.url,
+      }))
+    );
   };
 
   const handleFileChange = (e) => {
@@ -84,71 +63,34 @@ const MedicalRecords = ({ userId, userToken }) => {
     }
 
     setIsLoading(true);
-    const formData = new FormData();
-    formData.append("userId", userId);
-
-    Array.from(files).forEach((file, index) => {
-      formData.append("files", file);
-      formData.append("filenames", fileNames[index]);
-    });
-
-    try {
-      const response = await axiosInstance.post(
-        "/api/v1/upload-medical-certificate",
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-            Authorization: `Bearer ${userToken}`,
-          },
-          withCredentials: true,
-        }
-      );
-
-      if (response.data && response.data.success) {
-        toast.success("Medical records uploaded successfully");
-        setFiles(null);
-        setFileNames({});
-        if (fileInputRef.current) {
-          fileInputRef.current.value = "";
-        }
-        fetchMedicalRecords();
-      } else {
-        toast.error(response.data?.message || "Failed to upload files");
+    setTimeout(() => {
+      const existing = JSON.parse(localStorage.getItem("files")) || [];
+      const newFiles = Array.from(files).map((file, index) => ({
+        id: Date.now() + index,
+        name: fileNames[index],
+        url: URL.createObjectURL(file),
+        uploadedAt: new Date().toLocaleString(),
+      }));
+      localStorage.setItem("files", JSON.stringify([...existing, ...newFiles]));
+      toast.success("Medical records uploaded successfully");
+      setFiles(null);
+      setFileNames({});
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
       }
-    } catch (error) {
-      console.error("Error uploading files:", error);
-      toast.error(
-        error.response?.data?.message || "Failed to upload medical records"
-      );
-    } finally {
+      fetchMedicalRecords();
+      window.dispatchEvent(new Event("demoDataUpdated"));
       setIsLoading(false);
-    }
+    }, 500);
   };
 
   const deleteFile = async (fileId) => {
-    try {
-      const response = await axiosInstance.delete(
-        "/api/v1/delete-medical-certificate",
-        {
-          headers: {
-            Authorization: `Bearer ${userToken}`,
-          },
-          data: { fileId },
-          withCredentials: true,
-        }
-      );
-
-      if (response.data && response.data.status === "OK") {
-        toast.success("File deleted successfully");
-        fetchMedicalRecords();
-      } else {
-        toast.error(response.data?.message || "Failed to delete file");
-      }
-    } catch (error) {
-      console.error("Error deleting file:", error);
-      toast.error(error.response?.data?.message || "Failed to delete file");
-    }
+    const existing = JSON.parse(localStorage.getItem("files")) || [];
+    const filtered = existing.filter((file) => file.id !== fileId);
+    localStorage.setItem("files", JSON.stringify(filtered));
+    toast.success("File deleted successfully");
+    fetchMedicalRecords();
+    window.dispatchEvent(new Event("demoDataUpdated"));
   };
 
   return (

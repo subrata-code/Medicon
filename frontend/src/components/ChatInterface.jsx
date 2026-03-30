@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import AIbot from "../assets/robo.svg";
 import { X, Send, Maximize, Minimize } from "lucide-react";
-import axios from "axios";
 
 const ChatInterface = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -33,53 +32,15 @@ const ChatInterface = () => {
   };
 
   const generateContent = async (userPrompt) => {
-    // Format the prompt to encourage brief, practical responses with proper formatting
-    const medicalPrompt = `Provide a brief, practical medical response about "${userPrompt}". 
-    
-Format your response using these guidelines:
-- Use ** bold ** for important steps or headers
-- Use * italics * for emphasis
-- Use bullet points for lists
-- Keep your answer under 150 words
-- Include proper spacing between sections
-- Focus on specific actionable advice
-- End with a reminder to seek professional help if needed`;
-
-    const API_URL = import.meta.env.VITE_APP_URL;
-
-    try {
-      const response = await axios.post(
-        API_URL,
-        {
-          contents: [{ role: "user", parts: [{ text: medicalPrompt }] }],
-          generationConfig: {
-            temperature: 0.2,
-            maxOutputTokens: 300,
-          },
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      // Extract AI-generated response
-      const botResponse =
-        response.data.candidates?.[0]?.content?.parts?.[0]?.text ||
-        "I couldn't generate a response. Please try again.";
-
-      // Process the response to remove any remaining disclaimers at the beginning
-      let processedResponse = botResponse
-        .replace(/^(Disclaimer|Note|Remember|Please note):[^\n]*\n*/i, "")
-        .replace(/^As an AI(.*?)$/im, "")
-        .replace(/^I'm an AI(.*?)$/im, "")
-        .trim();
-
-      return processedResponse;
-    } catch (error) {
-      return "I'm sorry, I couldn't process your question. Please try again.";
+    const prompt = userPrompt.toLowerCase();
+    await new Promise((resolve) => setTimeout(resolve, 700));
+    if (prompt.includes("fever")) {
+      return "**Fever care:**\n\n• Stay hydrated and rest\n• Use light clothing\n• Monitor temperature every 4-6 hours\n\n*If fever persists more than 2 days, consult a doctor.*";
     }
+    if (prompt.includes("headache")) {
+      return "**Headache relief:**\n\n• Drink water\n• Rest in a dark room\n• Avoid screen time for a while\n\n*Seek medical help if severe or recurring.*";
+    }
+    return "**General advice:**\n\n• Keep a healthy routine\n• Track symptoms and duration\n• Consult a doctor for personalized treatment\n\n*For emergencies, contact medical services immediately.*";
   };
 
   const toggleChat = () => {

@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import HomePage from "./pages/HomePage";
 import Navbar from "./components/Navbar";
@@ -32,18 +32,21 @@ const App = () => {
           <Route path="/doctorLogin" element={<DoctorLogin />} />
           <Route path="/doctorSignup" element={<DoctorSignup />} />
           <Route path="/doctorDashboard/:id" element={<DoctorDashboard />} />
+          <Route path="/doctor" element={<DoctorDashboard />} />
           <Route path="/doctorprofile/:id" element={<DoctorInfoPage />} />
 
           {/* User Routes */}
           <Route path="/userLogin" element={<UserLogin />} />
           <Route path="/userSignup" element={<UserSignup />} />
           <Route path="/patientDashboard/:id" element={<PatientDashboard />} />
+          <Route path="/user" element={<PatientDashboard />} />
 
           {/* Login Dashboard */}
           <Route path="/loginDashboard" element={<LoginDashboard />} />
 
           {/* Admin Routes */}
           <Route path="/adminDashboard" element={<AdminDashboard />} />
+          <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/adminLogin" element={<AdminLogin />} />
           <Route path="/verify-doctors" element={<AdminDoctorVerification />} />
 

@@ -9,140 +9,35 @@ import {
   TrendingUp,
   RefreshCw,
 } from "lucide-react";
-import { io } from "socket.io-client";
-
-const SOCKET_URL =
-  import.meta.env.VITE_MODE === "development"
-    ? import.meta.env.VITE_DEVELOPMENT_URL
-    : `https://medicon-nw25.onrender.com`;
-
-let socket;
 
 const DashboardStats = ({ user }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [stats, setStats] = useState([]);
   const [healthMetrics, setHealthMetrics] = useState([]);
-  const [connected, setConnected] = useState(false);
-
-  // Initialize socket connection
+  // Simulate real-time health updates in demo mode
   useEffect(() => {
-    // Initialize socket connection if not already done
-    if (!socket) {
-      socket = io(SOCKET_URL);
-
-      socket.on("connect", () => {
-        console.log("Socket connected successfully!");
-        setConnected(true);
-      });
-
-      socket.on("connect_error", (error) => {
-        console.error("Socket connection error:", error);
-        setConnected(false);
-      });
-
-      socket.on("disconnect", () => {
-        console.log("Socket disconnected");
-        setConnected(false);
-      });
-    }
-
-    // Clean up socket connection when component unmounts
-    return () => {
-      // When component unmounts, we just remove listeners but keep the socket
-      // This avoids errors during logout
-      if (socket) {
-        console.log("Removing socket listeners on component unmount");
-        socket.off("connect");
-        socket.off("connect_error");
-        socket.off("disconnect");
-      }
-    };
-  }, []);
-
-  // Separate useEffect for global socket cleanup on logout or unmount
-  useEffect(() => {
-    // This will only run when the component is completely unmounted
-    return () => {
-      // Only disconnect if we're unmounting completely (like during logout)
-      if (socket) {
-        console.log("Disconnecting socket on complete unmount");
-        // Save reference to the socket before cleanup
-        const socketRef = socket;
-        // Setting socket to null first
-        socket = null;
-        // Then disconnect using the saved reference
-        socketRef.disconnect();
-      }
-    };
-  }, []);
-
-  // Listen for real-time health updates
-  useEffect(() => {
-    if (!user || !user._id || !socket) {
-      console.log("Waiting for user data or socket connection...");
+    if (!user || !user._id) {
       return;
     }
-
-    console.log("Setting up healthUpdate listener for user:", user._id);
-
-    const handleHealthUpdate = (data) => {
-      console.log("Received healthUpdate data:", data);
-
-      if (data.userId === user._id) {
-        console.log("Updating metrics for user:", user._id);
-        setHealthMetrics((prevMetrics) => {
-          return prevMetrics.map((metric) => {
-            if (metric.title === "Blood Pressure") {
-              return {
-                ...metric,
-                value: {
-                  systolic: data.bpData.systolic,
-                  diastolic: data.bpData.diastolic,
-                },
-                status:
-                  data.bpData.systolic >= 90 &&
-                  data.bpData.systolic <= 120 &&
-                  data.bpData.diastolic >= 60 &&
-                  data.bpData.diastolic <= 80
-                    ? "Normal"
-                    : "Abnormal",
-              };
-            } else if (metric.title === "Heart Rate") {
-              return {
-                ...metric,
-                value: data.heartRateData,
-                status:
-                  data.heartRateData >= 60 && data.heartRateData <= 100
-                    ? "Normal"
-                    : "Abnormal",
-              };
-            } else if (metric.title === "SPO2") {
-              return {
-                ...metric,
-                value: data.spO2Data,
-                status: data.spO2Data >= 95 ? "Healthy" : "Low",
-              };
-            }
-            return metric;
-          });
-        });
-      } else {
-        console.log("User IDs don't match. Skipping update.");
-      }
-    };
-
-    // Add the event listener
-    socket.on("healthUpdate", handleHealthUpdate);
-
-    // Clean up the event listener
+    const interval = setInterval(() => {
+      setHealthMetrics((prevMetrics) =>
+        prevMetrics.map((metric) => {
+          if (metric.title === "Heart Rate" && typeof metric.value === "number") {
+            const next = Math.max(60, Math.min(100, metric.value + (Math.random() > 0.5 ? 1 : -1)));
+            return { ...metric, value: next, status: "Normal" };
+          }
+          if (metric.title === "SPO2" && typeof metric.value === "number") {
+            const next = Math.max(95, Math.min(100, metric.value + (Math.random() > 0.5 ? 1 : -1)));
+            return { ...metric, value: next, status: "Healthy" };
+          }
+          return metric;
+        })
+      );
+    }, 5000);
     return () => {
-      // Check if socket still exists before calling off
-      if (socket) {
-        console.log("Removing healthUpdate listener");
-        socket.off("healthUpdate", handleHealthUpdate);
-      }
+      clearInterval(interval);
     };
-  }, [user, connected]);
+  }, [user]);
 
   // Initial data setup
   useEffect(() => {

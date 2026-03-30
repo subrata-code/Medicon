@@ -4,14 +4,12 @@ import {
   Calendar,
   Clock,
   Video,
-  MessageSquare,
   RefreshCw,
   CheckCircle,
   XCircle,
   AlertCircle,
   Star,
 } from "lucide-react";
-import axiosInstance from "../libs/axios";
 import toast from "react-hot-toast";
 import Image from "./Image";
 import ReviewModal from "./ReviewModal";
@@ -21,37 +19,55 @@ const AppointmentsSection = ({ userToken }) => {
   const [appointments, setAppointments] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
-  const [filterType, setFilterType] = useState("all");
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [selectedDoctor, setSelectedDoctor] = useState(null);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
 
   useEffect(() => {
-    if (userToken) {
-      getAppointments();
-    }
+    getAppointments();
   }, [userToken]);
 
-  const getAppointments = async () => {
+  const getAppointments = () => {
     setIsLoading(true);
-    try {
-      const response = await axiosInstance.get("/api/v1/appointments", {
-        headers: {
-          Authorization: `Bearer ${userToken}`,
-        },
-        withCredentials: true,
+    setTimeout(() => {
+      const pid =
+        localStorage.getItem("currentPatientId") || "demo-user";
+      const bookings = JSON.parse(localStorage.getItem("bookings")) || [];
+      const appointments = JSON.parse(localStorage.getItem("appointments")) || [];
+      const map = new Map();
+      [...appointments, ...bookings].forEach((booking) => {
+        if (!booking || booking.id == null) return;
+        const matches =
+          String(booking.patientId) === String(pid) ||
+          booking.patientId === "demo-user";
+        if (!matches) return;
+        map.set(booking.id, booking);
       });
-
-      if (response.data?.data) {
-        setAppointments(response.data.data);
-      } else {
-        toast.error("No appointments found!");
-      }
-    } catch (error) {
-      toast.error("Something went wrong in loading appointments!");
-    } finally {
+      const merged = Array.from(map.values());
+      const normalized = merged
+        .map((booking) => ({
+          _id: booking.id,
+          doctorId: {
+            _id: booking.doctorId,
+            name: booking.doctorName,
+            specialization: ["General"],
+            profilepic: "https://randomuser.me/api/portraits/men/32.jpg",
+          },
+          date: booking.date,
+          startTime: booking.preferredSlot?.split(" - ")[0] || "10:00 AM",
+          endTime: booking.preferredSlot?.split(" - ")[1] || "10:30 AM",
+          status:
+            booking.status === "approved" || booking.status === "accepted"
+              ? "confirmed"
+              : booking.status === "rejected"
+              ? "cancelled"
+              : "pending",
+          type: "Video Call",
+          review: booking.review || null,
+        }));
+      setAppointments(normalized);
       setIsLoading(false);
-    }
+    }, 400);
   };
 
   const handleAppointmentUpdate = (updatedAppointment) => {
@@ -127,6 +143,13 @@ const AppointmentsSection = ({ userToken }) => {
     setShowReviewModal(false);
     getAppointments(); // Refresh appointments after review
   };
+
+  useEffect(() => {
+    const handleDemoDataUpdate = () => getAppointments();
+    window.addEventListener("demoDataUpdated", handleDemoDataUpdate);
+    return () =>
+      window.removeEventListener("demoDataUpdated", handleDemoDataUpdate);
+  }, []);
 
   return (
     <div className="space-y-6">

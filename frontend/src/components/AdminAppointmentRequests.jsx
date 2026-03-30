@@ -1,75 +1,62 @@
 // src/components/AdminAppointmentRequests.jsx
 import React, { useState, useEffect } from "react";
-import { axiosInstance } from "../libs/axios";
-import { toast } from "react-hot-toast";
 
 const AdminAppointmentRequests = () => {
   const [appointments, setAppointments] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [updating, setUpdating] = useState(false);
-  const admintoken = localStorage.getItem("admintoken");
 
   useEffect(() => {
-    if (admintoken) {
-      fetchAppointments();
-    }
-  }, [admintoken]);
+    fetchAppointments();
+  }, []);
 
-  const updateAppointmentStatus = async (appointmentId, status) => {
-    setUpdating(true);
-    try {
-      const response = await axiosInstance.post(
-        `/api/v1/appointments/${appointmentId}/status`,
-        { status },
-        {
-          headers: {
-            Authorization: `Bearer ${admintoken}`,
-          },
-        }
+  useEffect(() => {
+    const handleDemoDataUpdate = () => fetchAppointments();
+    window.addEventListener("demoDataUpdated", handleDemoDataUpdate);
+    const id = setInterval(fetchAppointments, 2500);
+    return () => {
+      window.removeEventListener("demoDataUpdated", handleDemoDataUpdate);
+      clearInterval(id);
+    };
+  }, []);
+
+  const updateAppointmentStatus = (appointmentId, status) => {
+    const patch = (key) => {
+      const list = JSON.parse(localStorage.getItem(key)) || [];
+      const updated = list.map((booking) =>
+        booking.id === appointmentId ? { ...booking, status } : booking
       );
-
-      if (response.data.status === "success") {
-        toast.success("Appointment status updated successfully");
-        fetchAppointments();
-      }
-    } catch (error) {
-      console.error(error);
-      toast.error("Failed to update appointment status");
-    } finally {
-      setUpdating(false);
-    }
+      localStorage.setItem(key, JSON.stringify(updated));
+    };
+    patch("bookings");
+    patch("appointments");
+    if (status === "approved") alert("Approved Successfully");
+    fetchAppointments();
+    window.dispatchEvent(new Event("demoDataUpdated"));
   };
 
-  const fetchAppointments = async () => {
-    setLoading(true);
-    try {
-      const response = await axiosInstance.get("/api/v1/get-all-appointments", {
-        headers: {
-          Authorization: `Bearer ${admintoken}`,
-        },
-      });
-      setAppointments(response.data.data);
-    } catch (error) {
-      console.error(error);
-      toast.error("Failed to fetch appointments");
-    } finally {
-      setLoading(false);
-    }
+  const fetchAppointments = () => {
+    const bookings = JSON.parse(localStorage.getItem("bookings")) || [];
+    const raw = JSON.parse(localStorage.getItem("appointments")) || [];
+    const map = new Map();
+    [...raw, ...bookings].forEach((row) => {
+      if (row && row.id != null) map.set(row.id, row);
+    });
+    setAppointments(Array.from(map.values()));
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center min-h-screen">
-        <p className="text-lg text-gray-600">Loading...</p>
-      </div>
-    );
-  }
+  const getStatusColor = (status) => {
+    if (status === "pending") return "bg-yellow-100 text-yellow-800";
+    if (status === "accepted" || status === "approved") {
+      return "bg-green-100 text-green-800";
+    }
+    if (status === "rejected") return "bg-red-100 text-red-800";
+    return "bg-gray-100 text-gray-800";
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
+    <div className="bg-gray-50 p-4 rounded-lg">
       <div className="max-w-6xl mx-auto">
         <h1 className="text-2xl font-semibold text-gray-800 mb-6">
-          Pending Appointments
+          All Appointment Requests
         </h1>
 
         {appointments.length === 0 ? (
@@ -82,26 +69,20 @@ const AdminAppointmentRequests = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {appointments.map((appointment) => (
               <div
-                key={appointment._id}
+                key={appointment.id}
                 className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow"
               >
                 <div className="p-4">
                   <div className="flex justify-between items-start mb-3">
                     <div className="pr-3">
                       <h3 className="font-medium text-gray-900 text-sm">
-                        {appointment.userId?.name}
+                        {appointment.patientName}
                       </h3>
-                      <p className="text-sm mb-2 text-gray-500">
-                        {appointment.userId?.email}
-                      </p>
+                      <p className="text-sm mb-2 text-gray-500">{appointment.date}</p>
                       <span
-                        className={`px-1 py-1 rounded-sm  text-sm font-medium whitespace-nowrap ${
-                          appointment.status === "pending"
-                            ? "bg-yellow-100 text-yellow-800"
-                            : appointment.status === "confirmed"
-                            ? "bg-green-100 text-green-800"
-                            : "bg-red-100 text-red-800"
-                        }`}
+                        className={`px-1 py-1 rounded-sm text-sm font-medium whitespace-nowrap ${getStatusColor(
+                          appointment.status
+                        )}`}
                       >
                         {appointment.status}
                       </span>
@@ -115,27 +96,13 @@ const AdminAppointmentRequests = () => {
                           Doctor:
                         </span>
                         <p className="text-gray-900 font-medium">
-                          {appointment.doctorId?.name}
+                          {appointment.doctorName}
                         </p>
                       </div>
                       <div>
-                        <span className="text-gray-500 block mb-1">
-                          Specialization:
-                        </span>
-                        <p className="text-gray-900 font-medium truncate">
-                          {appointment.doctorId?.specialization}
-                        </p>
-                      </div>
-                      <div>
-                        <span className="text-gray-500 block mb-1">Date:</span>
+                        <span className="text-gray-500 block mb-1">Requested:</span>
                         <p className="text-gray-900 font-medium">
-                          {new Date(appointment.date).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <div>
-                        <span className="text-gray-500 block mb-1">Time:</span>
-                        <p className="text-gray-900 font-medium">
-                          {appointment.startTime} - {appointment.endTime}
+                          {appointment.preferredSlot || "Not specified"}
                         </p>
                       </div>
                     </div>
@@ -144,21 +111,19 @@ const AdminAppointmentRequests = () => {
                   <div className="flex gap-3 mt-4">
                     <button
                       onClick={() =>
-                        updateAppointmentStatus(appointment._id, "confirmed")
+                        updateAppointmentStatus(appointment.id, "approved")
                       }
-                      disabled={updating}
                       className="flex-1 cursor-pointer bg-green-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-600 disabled:opacity-50"
                     >
-                      {updating ? "Updating..." : "Confirm"}
+                      Approve
                     </button>
                     <button
                       onClick={() =>
-                        updateAppointmentStatus(appointment._id, "cancelled")
+                        updateAppointmentStatus(appointment.id, "rejected")
                       }
-                      disabled={updating}
                       className="flex-1 cursor-pointer bg-red-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-600 disabled:opacity-50"
                     >
-                      {updating ? "Updating..." : "Cancel"}
+                      Reject
                     </button>
                   </div>
                 </div>

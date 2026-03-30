@@ -9,7 +9,6 @@ import {
 } from "lucide-react";
 import Image from "./Image";
 import { toast } from "react-hot-toast";
-import axiosInstance from "../libs/axios";
 import AppointmentModal from "./AppointmentModal";
 
 const DoctorCard = ({ doctor, user }) => {
@@ -17,8 +16,8 @@ const DoctorCard = ({ doctor, user }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const openModal = () => {
-    const userToken = localStorage.getItem("usertoken");
-    if (!userToken) {
+    const role = localStorage.getItem("role");
+    if (role !== "user") {
       toast.error("Please login to book appointment");
       navigate("/userLogin");
       return;

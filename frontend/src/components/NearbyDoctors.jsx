@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { MapPin, Phone, Mail, Star } from "lucide-react";
-import axiosInstance from "../libs/axios";
 import { toast } from "react-hot-toast";
+import { mergeNearbyDoctorsWithApproved } from "../utils/demoMergeDoctors";
 
 const NearbyDoctors = ({ searchTerm, specialization }) => {
   const [doctors, setDoctors] = useState([]);
@@ -39,29 +39,23 @@ const NearbyDoctors = ({ searchTerm, specialization }) => {
   }, [userLocation]);
 
   const fetchNearbyDoctors = async () => {
-    try {
-      const response = await axiosInstance.get("/api/v1/nearby-doctors", {
-        params: {
-          latitude: userLocation.latitude,
-          longitude: userLocation.longitude,
-          maxDistance: 10000, // 10km in meters
-        },
-      });
-
-      if (response.data && response.data.status === "OK") {
-        setDoctors(response.data.data);
-      } else {
-        setError("No doctors found in your area");
-      }
-    } catch (error) {
-      console.error("Error fetching nearby doctors:", error);
-      setError(
-        error.response?.data?.message || "Failed to fetch nearby doctors"
-      );
-    } finally {
+    setTimeout(() => {
+      setDoctors(mergeNearbyDoctorsWithApproved());
       setLoading(false);
-    }
+    }, 500);
   };
+
+  useEffect(() => {
+    const refresh = () => {
+      setDoctors(mergeNearbyDoctorsWithApproved());
+    };
+    window.addEventListener("demoDataUpdated", refresh);
+    const id = setInterval(refresh, 2500);
+    return () => {
+      window.removeEventListener("demoDataUpdated", refresh);
+      clearInterval(id);
+    };
+  }, []);
 
   // Filter doctors based on search term and specialization
   const filteredDoctors = useMemo(() => {
@@ -140,7 +134,7 @@ const NearbyDoctors = ({ searchTerm, specialization }) => {
                 <div className="flex items-center text-gray-600">
                   <MapPin className="h-4 w-4 mr-2" />
                   <span className="text-sm">
-                    {doctor.distance.toFixed(2)} km away
+                    {Number(doctor.distance).toFixed(2)} km away
                   </span>
                 </div>
               </div>

@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Search, Star, Award, X } from "lucide-react";
-import axiosInstance from "../libs/axios";
-import toast from "react-hot-toast";
-import DoctorCard from "../components/DoctorCard"; // Import the DoctorCard component
+import DoctorCard from "../components/DoctorCard";
+import { mergeDoctorCardsWithApproved } from "../utils/demoMergeDoctors";
 
 const FindDoctors = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -32,27 +31,19 @@ const FindDoctors = () => {
   ];
 
   useEffect(() => {
-    fetchDoctors();
+    setDoctors(mergeDoctorCardsWithApproved());
+    setLoading(false);
   }, []);
 
-  const fetchDoctors = async () => {
-    try {
-      setLoading(true);
-      const response = await axiosInstance.get("/api/v1/doctors");
-
-      if (response.data && response.data.status === "OK") {
-        setDoctors(response.data.data);
-      } else {
-        setError("No doctors found");
-      }
-    } catch (error) {
-      console.error("Error fetching doctors:", error);
-      setError(error.response?.data?.message || "Failed to fetch doctors");
-      toast.error(error.response?.data?.message || "Failed to fetch doctors");
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    const refresh = () => setDoctors(mergeDoctorCardsWithApproved());
+    window.addEventListener("demoDataUpdated", refresh);
+    const id = setInterval(refresh, 2500);
+    return () => {
+      window.removeEventListener("demoDataUpdated", refresh);
+      clearInterval(id);
+    };
+  }, []);
 
   const handleSort = (field) => {
     if (sortBy === field) {

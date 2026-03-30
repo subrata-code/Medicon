@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { Star, X } from "lucide-react";
-import axiosInstance from "../libs/axios";
 import { toast } from "react-hot-toast";
 
 const ReviewModal = ({
@@ -13,7 +12,6 @@ const ReviewModal = ({
   const [rating, setRating] = useState(0);
   const [review, setReview] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const userToken = localStorage.getItem("usertoken");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -24,33 +22,36 @@ const ReviewModal = ({
 
     setIsSubmitting(true);
     try {
-      const response = await axiosInstance.post(
-        "/api/v1/reviews",
-        {
-          doctorId: doctor._id,
-          appointmentId,
-          rating,
-          review: review || "No remark given", // Ensure review is never empty
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${userToken}`,
-          },
-        }
-      );
+      const reviews = JSON.parse(localStorage.getItem("demoReviews")) || [];
+      reviews.push({
+        id: Date.now(),
+        doctorId: doctor._id,
+        appointmentId,
+        rating,
+        review: review || "No remark given",
+        name: "Demo User",
+      });
+      localStorage.setItem("demoReviews", JSON.stringify(reviews));
 
-      if (response.data) {
-        toast.success("Thank you for your review!");
-        onReviewSubmit();
-        onClose();
-      }
+      const bookings = JSON.parse(localStorage.getItem("bookings")) || [];
+      const updatedBookings = bookings.map((booking) =>
+        booking.id === appointmentId
+          ? {
+              ...booking,
+              review: review || "No remark given",
+              rating,
+            }
+          : booking
+      );
+      localStorage.setItem("bookings", JSON.stringify(updatedBookings));
+      window.dispatchEvent(new Event("demoDataUpdated"));
+
+      toast.success("Thank you for your review!");
+      onReviewSubmit();
+      onClose();
     } catch (error) {
       console.error("Error submitting review:", error);
-      if (error.response) {
-        toast.error(error.response.data.message || "Failed to submit review");
-      } else {
-        toast.error("Failed to submit review. Please try again.");
-      }
+      toast.error("Failed to submit review. Please try again.");
     } finally {
       setIsSubmitting(false);
     }

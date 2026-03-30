@@ -12,7 +12,6 @@ import {
   Calendar,
 } from "lucide-react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
-import axiosInstance from "../libs/axios"; 
 import Tooltip from "./Tooltip";
 import SOS from "./SOS";
 
@@ -25,20 +24,10 @@ const Navbar = () => {
   const [searchQuery, setSearchQuery] = useState("");
 
   const checkAuth = () => {
-    const doctorToken = localStorage.getItem("doctortoken");
-    const userToken = localStorage.getItem("usertoken");
-    const adminToken = localStorage.getItem("admintoken");
-    const secNumber = localStorage.getItem("secNumber");
-
-    if (doctorToken) {
+    const storedRole = localStorage.getItem("role");
+    if (storedRole) {
       setIsAuth(true);
-      setRole("doctor");
-    } else if (userToken) {
-      setIsAuth(true);
-      setRole("user");
-    } else if (adminToken) {
-      setIsAuth(true);
-      setRole("admin");
+      setRole(storedRole);
     } else {
       setIsAuth(false);
       setRole(null);
@@ -51,46 +40,21 @@ const Navbar = () => {
   }, [location.pathname]);
 
   const handleDoctorLogout = async () => {
-    const doctorToken = localStorage.getItem("doctortoken");
-    const doctorId = localStorage.getItem("doctorId");
-
-    if (doctorToken && doctorId) {
-      try {
-        await axiosInstance.post(
-          "/api/v1/update-doctor-status",
-          {
-            doctorId,
-            isOnline: false,
-            isBusy: false,
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${doctorToken}`,
-            },
-          }
-        );
-      } catch (error) {
-        console.error("Error during doctor logout:", error);
-      }
-    }
-    localStorage.removeItem("doctortoken");
-    localStorage.removeItem("doctorId");
+    localStorage.removeItem("role");
     setIsAuth(false);
     setRole(null);
     navigate("/loginDashboard");
   };
 
   const handleUserLogout = () => {
-    localStorage.removeItem("usertoken");
-    localStorage.removeItem("userId");
-    localStorage.removeItem("secNumber");
+    localStorage.removeItem("role");
     setIsAuth(false);
     setRole(null);
     navigate("/loginDashboard");
   };
 
   const handleAdminLogout = () => {
-    localStorage.removeItem("admintoken");
+    localStorage.removeItem("role");
     setIsAuth(false);
     setRole(null);
     navigate("/loginDashboard");
@@ -105,16 +69,13 @@ const Navbar = () => {
   };
 
   const getDashboardLink = () => {
-    const userId = localStorage.getItem(
-      role === "doctor" ? "doctorId" : "userId"
-    );
     switch (role) {
       case "doctor":
-        return `/doctorDashboard/${userId}`;
+        return `/doctor`;
       case "user":
-        return `/patientDashboard/${userId}`;
+        return `/user`;
       case "admin":
-        return "/adminDashboard";
+        return "/admin";
       default:
         return "/";
     }

@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Calendar, Clock, X } from "lucide-react";
 import { motion } from "framer-motion";
-import { toast } from "react-hot-toast";
-import { axiosInstance } from "../libs/axios";
 
 const AppointmentModal = ({ isOpen, onClose, doctor, user }) => {
   const [availableSlots, setAvailableSlots] = useState([]);
@@ -12,9 +10,8 @@ const AppointmentModal = ({ isOpen, onClose, doctor, user }) => {
   const [isFetchingSlots, setIsFetchingSlots] = useState(false);
 
   const { _id: doctorId } = doctor;
-  const userToken = localStorage.getItem("usertoken");
 
-  // Fetch doctor's schedule when modal opens
+  // Load demo schedule when modal opens
   useEffect(() => {
     if (isOpen) {
       fetchDoctorSchedule();
@@ -23,82 +20,80 @@ const AppointmentModal = ({ isOpen, onClose, doctor, user }) => {
 
   const fetchDoctorSchedule = async () => {
     setIsFetchingSlots(true);
-    try {
-      const response = await axiosInstance.get(
-        `/api/v1/getSchedule/${doctorId}`,
+    // Frontend-only demo slots
+    setTimeout(() => {
+      setAvailableSlots([
         {
-          headers: { Authorization: `Bearer ${userToken}` },
-        }
-      );
-
-      console.log("Schedule Response:", response.data);
-
-      if (
-        response.data?.status === "Success" &&
-        Array.isArray(response.data.data)
-      ) {
-        // Filter enabled days and their slots
-        const availableDays = response.data.data.filter(
-          (schedule) => schedule.enabled && schedule.slots?.length > 0
-        );
-        setAvailableSlots(availableDays);
-      }
-    } catch (error) {
-      console.error("Error fetching schedule:", error);
-      toast.error("Failed to fetch available slots");
-    } finally {
+          day: "Monday",
+          enabled: true,
+          slots: [
+            { start: "10:00 AM", end: "10:30 AM" },
+            { start: "11:00 AM", end: "11:30 AM" },
+          ],
+        },
+        {
+          day: "Wednesday",
+          enabled: true,
+          slots: [
+            { start: "02:00 PM", end: "02:30 PM" },
+            { start: "03:00 PM", end: "03:30 PM" },
+          ],
+        },
+      ]);
       setIsFetchingSlots(false);
-    }
+    }, 400);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!selectedSlot || !selectedDate) {
-      toast.error("Please select both a date and time slot");
+      alert("Please select both a date and time slot");
       return;
     }
 
     setIsLoading(true);
-    try {
-      const formattedDate = selectedDate;
-      const startDateTime = selectedSlot.start;
-      const endDateTime = selectedSlot.end;
+    setTimeout(() => {
+      const requestId = Date.now();
+      const patientId =
+        user?._id ||
+        localStorage.getItem("currentPatientId") ||
+        "demo-user";
+      const newBooking = {
+        id: requestId,
+        patientName: user?.name || "Demo User",
+        patientId: String(patientId),
+        doctorId: String(doctorId || "demo-doctor"),
+        doctorName: doctor?.name || "Demo Doctor",
+        status: "pending",
+        date: new Date().toLocaleString(),
+        preferredDate: selectedDate,
+        preferredSlot: `${selectedSlot.start} - ${selectedSlot.end}`,
+      };
 
-      console.log("Submitting appointment data:", {
-        doctorId,
-        date: formattedDate,
-        startTime: startDateTime,
-        endTime: endDateTime,
-      });
+      const newAppointment = {
+        id: requestId,
+        doctorId: String(doctorId || "demo-doctor"),
+        patientName: user?.name || "Demo User",
+        patientId: String(patientId),
+        status: "pending",
+        date: newBooking.date,
+        doctorName: doctor?.name || "Demo Doctor",
+        preferredDate: selectedDate,
+        preferredSlot: newBooking.preferredSlot,
+      };
 
-      const response = await axiosInstance.post(
-        "/api/v1/appoint/book",
-        {
-          doctorId,
-          date: formattedDate,
-          startTime: startDateTime,
-          endTime: endDateTime,
-        },
-        {
-          headers: { Authorization: `Bearer ${userToken}` },
-        }
-      );
+      const bookings = JSON.parse(localStorage.getItem("bookings")) || [];
+      const appointments = JSON.parse(localStorage.getItem("appointments")) || [];
+      bookings.push(newBooking);
+      appointments.push(newAppointment);
+      localStorage.setItem("bookings", JSON.stringify(bookings));
+      localStorage.setItem("appointments", JSON.stringify(appointments));
+      window.dispatchEvent(new Event("demoDataUpdated"));
 
-      if (response.data?.appointment) {
-        // Only close and show success if we got an appointment back
-        toast.success("Appointment Request Raised Successfully!");
-        onClose();
-      } else {
-        toast.error("Something went wrong while booking");
-      }
-    } catch (error) {
-      console.error("Booking error:", error.response?.data || error);
-      toast.error(
-        error.response?.data?.message || "Failed to book appointment"
-      );
-    } finally {
       setIsLoading(false);
-    }
+      alert("Request Sent");
+      onClose();
+    }, 1000);
   };
 
   if (!isOpen) return null;

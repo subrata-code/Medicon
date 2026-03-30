@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Calendar,
   Clock,
@@ -10,6 +10,8 @@ import {
   Filter,
   RefreshCw,
 } from "lucide-react";
+import { mergeAvailableDoctorsRows } from "../utils/demoMergeDoctors";
+import { demoReviews } from "../data/demoReviews";
 
 const AvailableDoctors = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -17,70 +19,22 @@ const AvailableDoctors = () => {
   const [selectedSpecialization, setSelectedSpecialization] = useState("all");
   const [sortBy, setSortBy] = useState("rating");
 
-  // Static data for doctors
-  const doctorsData = [
-    {
-      id: 1,
-      name: "Dr. Sarah Johnson",
-      specialization: "Cardiologist",
-      rating: 4.8,
-      reviews: 127,
-      experience: "12 years",
-      location: "New York, NY",
-      availability: "Available Today",
-      nextAvailable: "10:00 AM",
-      contact: "+1 (555) 123-4567",
-      image: "https://randomuser.me/api/portraits/women/1.jpg",
-    },
-    {
-      id: 2,
-      name: "Dr. Michael Chen",
-      specialization: "Neurologist",
-      rating: 4.9,
-      reviews: 89,
-      experience: "15 years",
-      location: "Los Angeles, CA",
-      availability: "Next Available: Tomorrow",
-      nextAvailable: "2:30 PM",
-      contact: "+1 (555) 234-5678",
-      image: "https://randomuser.me/api/portraits/men/2.jpg",
-    },
-    {
-      id: 3,
-      name: "Dr. Emily Brown",
-      specialization: "Pediatrician",
-      rating: 4.7,
-      reviews: 156,
-      experience: "8 years",
-      location: "Chicago, IL",
-      availability: "Available Today",
-      nextAvailable: "11:00 AM",
-      contact: "+1 (555) 345-6789",
-      image: "https://randomuser.me/api/portraits/women/3.jpg",
-    },
-    {
-      id: 4,
-      name: "Dr. David Wilson",
-      specialization: "Orthopedist",
-      rating: 4.6,
-      reviews: 98,
-      experience: "10 years",
-      location: "Houston, TX",
-      availability: "Next Available: Tomorrow",
-      nextAvailable: "9:00 AM",
-      contact: "+1 (555) 456-7890",
-      image: "https://randomuser.me/api/portraits/men/4.jpg",
-    },
-  ];
+  const [doctors, setDoctors] = useState(() => mergeAvailableDoctorsRows());
 
-  const [doctors, setDoctors] = useState(doctorsData);
+  useEffect(() => {
+    const refresh = () => setDoctors(mergeAvailableDoctorsRows());
+    refresh();
+    window.addEventListener("demoDataUpdated", refresh);
+    const id = setInterval(refresh, 2500);
+    return () => {
+      window.removeEventListener("demoDataUpdated", refresh);
+      clearInterval(id);
+    };
+  }, []);
 
   const specializations = [
     "all",
-    "Cardiologist",
-    "Neurologist",
-    "Pediatrician",
-    "Orthopedist",
+    ...Array.from(new Set(doctors.map((d) => d.specialization))),
   ];
 
   const filteredDoctors = doctors
@@ -108,9 +62,8 @@ const AvailableDoctors = () => {
 
   const handleRefresh = () => {
     setIsLoading(true);
-    // Simulate API call with setTimeout
     setTimeout(() => {
-      setDoctors(doctorsData);
+      setDoctors(mergeAvailableDoctorsRows());
       setIsLoading(false);
     }, 1000);
   };
@@ -190,6 +143,18 @@ const AvailableDoctors = () => {
                 <span className="text-sm text-gray-600">
                   {doctor.rating} ({doctor.reviews} reviews)
                 </span>
+              </div>
+              {/* Demo Reviews */}
+              <div className="mt-2 space-y-1">
+                {demoReviews.map((review) => (
+                  <div key={review.id} className="text-xs text-gray-600">
+                    <span className="font-medium">{review.name}</span>{" "}
+                    <span className="text-yellow-400">
+                      {"★".repeat(review.rating)}
+                    </span>
+                    <span className="ml-1">- {review.comment}</span>
+                  </div>
+                ))}
               </div>
               <div className="flex items-center space-x-2">
                 <MapPin className="w-4 h-4 text-gray-400" />

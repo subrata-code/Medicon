@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { ShieldCheck } from "lucide-react";
-import axiosInstance from "../libs/axios";
 import { toast } from "react-hot-toast";
 
 const SOS = () => {
@@ -10,23 +9,25 @@ const SOS = () => {
   const userId = localStorage.getItem("userId");
 
   const handleSOS = async () => {
-    if (!emNumber || !userId) {
-      toast.error("User is not logged in");
-      window.location.href = "tel:108";
-      return;
-    }
     setIsLoading(true);
-    try {
-      await axiosInstance.post("/api/v1/sos", {
-        userId,
-        emNumber,
-      });
+    setTimeout(() => {
+      if (!emNumber || !userId) {
+        toast.error("User is not logged in");
+        window.location.href = "tel:108";
+        setIsLoading(false);
+        return;
+      }
+      localStorage.setItem(
+        "lastSOS",
+        JSON.stringify({
+          userId,
+          emNumber,
+          createdAt: new Date().toLocaleString(),
+        })
+      );
       toast.success("SOS sent successfully");
-    } catch (error) {
-      toast.error("Failed to send SOS");
-      window.location.href = "tel:108";
-    }
-    setIsLoading(false);
+      setIsLoading(false);
+    }, 600);
   };
   return (
     <button

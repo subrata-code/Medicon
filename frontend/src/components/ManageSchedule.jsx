@@ -1,15 +1,12 @@
 // src/components/ManageSchedule.jsx
 import React, { useEffect, useState } from "react";
 import { AiOutlineClose } from "react-icons/ai";
-import { axiosInstance } from "../libs/axios";
 import toast from "react-hot-toast";
 
 const ManageSchedule = ({ doctorId }) => {
   const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
   const [schedules, setSchedules] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const doctorToken = localStorage.getItem("doctortoken");
-
   const defaultSchedule = () => {
     setSchedules(
       days.map((day) => ({
@@ -55,133 +52,21 @@ const ManageSchedule = ({ doctorId }) => {
   }, [doctorId]);
 
   const handleSave = async () => {
-    try {
-      const response = await axiosInstance.post(
-        "/api/v1/updateSchedule",
-        { schedules },
-        {
-          headers: {
-            Authorization: `Bearer ${doctorToken}`,
-          },
-        }
-      );
-
-      if (response.data && response.data.status === "Success") {
-        toast.success("Schedule Updated Successfully");
-        getSchedule(doctorId);
-        toast.success("Schedule Reloaded");
-      } else {
-        toast.error("Failed to update schedule");
-      }
-    } catch (error) {
-      console.error(error);
-      toast.error("Failed to update schedule");
-    }
+    localStorage.setItem(`schedule_${doctorId}`, JSON.stringify(schedules));
+    toast.success("Schedule Updated Successfully");
   };
 
   const getSchedule = async (doctorId) => {
-    try {
-      setIsLoading(true);
-      console.log("Fetching schedule for doctor:", doctorId);
-
-      const response = await axiosInstance.get(
-        `/api/v1/getSchedule/${doctorId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${doctorToken}`,
-          },
-        }
-      );
-
-      console.log("API Response:", response.data);
-
-      if (response.data && response.data.status === "Success") {
-        let scheduleData;
-
-        if (response.data.data && response.data.data.schedules) {
-          // Case where schedules is within the data object
-          scheduleData = response.data.data.schedules;
-        } else if (response.data.data) {
-          // Check if data itself could be the schedules array
-          scheduleData = response.data.data;
-        } else {
-          console.error("No valid schedule data found in response");
-          defaultSchedule();
-          setIsLoading(false);
-          toast.info("No schedule found, using default");
-          return;
-        }
-
-        // Ensure scheduleData is an array before proceeding
-        if (!Array.isArray(scheduleData)) {
-          const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
-          if (typeof scheduleData === "object") {
-            // Convert object format to array format if needed
-            const scheduleArray = [];
-            for (const day of days) {
-              if (scheduleData[day]) {
-                scheduleArray.push({
-                  day: day,
-                  enabled: scheduleData[day].enabled || false,
-                  slots: scheduleData[day].slots || [],
-                });
-              } else {
-                scheduleArray.push({
-                  day: day,
-                  enabled: false,
-                  slots: [{ start: "09:00", end: "17:00" }],
-                });
-              }
-            }
-            scheduleData = scheduleArray;
-          } else {
-            console.error(
-              "Schedule data is not in a usable format:",
-              scheduleData
-            );
-            defaultSchedule();
-            setIsLoading(false);
-            toast.error("Invalid schedule data format");
-            return;
-          }
-        }
-
-        // Make sure every expected day is in the schedule
-        const formattedSchedules = days.map((day) => {
-          const existingDay = scheduleData.find((s) => s.day === day);
-          if (existingDay) {
-            return {
-              day,
-              enabled: existingDay.enabled || false,
-              slots:
-                Array.isArray(existingDay.slots) && existingDay.slots.length > 0
-                  ? existingDay.slots
-                  : [{ start: "09:00", end: "17:00" }],
-            };
-          } else {
-            return {
-              day,
-              enabled: false,
-              slots: [{ start: "09:00", end: "17:00" }],
-            };
-          }
-        });
-
-        console.log("Formatted schedules:", formattedSchedules);
-        setSchedules(formattedSchedules);
-        setIsLoading(false);
+    setIsLoading(true);
+    setTimeout(() => {
+      const saved = localStorage.getItem(`schedule_${doctorId}`);
+      if (saved) {
+        setSchedules(JSON.parse(saved));
       } else {
-        // If no schedule is found, set default schedule
         defaultSchedule();
-        setIsLoading(false);
-        toast.info("No schedule found, using default");
       }
-    } catch (error) {
-      console.error("Error getting schedule:", error);
-      defaultSchedule();
       setIsLoading(false);
-      toast.error(`Failed to load schedule: ${error.message}`);
-    }
+    }, 350);
   };
 
   if (isLoading) {

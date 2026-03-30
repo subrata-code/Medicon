@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useLocation } from "react-router-dom";
-import axiosInstance from "../libs/axios";
 import DoctorProfileHeader from "../components/DoctorProfileHeader";
 import {
   BadgeCheck,
@@ -28,27 +27,33 @@ const DoctorInfoPage = () => {
 
   useEffect(() => {
     console.log("User data in doctor info : ", user);
-    const fetchDoctorData = async () => {
-      try {
-        setLoading(true);
-        const response = await axiosInstance.get(`/api/v1/doctors/${id}`);
-        if (response.data && response.data.data) {
-          setDoctor(response.data.data);
-        }
-      } catch (error) {
-        console.error("Error fetching doctor data:", error);
-        toast.error("Failed to load doctor information");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchDoctorData();
-  }, [id]);
+    // For demo, use a static doctor profile
+    setDoctor({
+      name: "Dr. Amit Sharma",
+      facts:
+        "Experienced cardiologist with a focus on preventive cardiology and patient education.",
+      education: "MBBS, MD (Cardiology)",
+      experience: 12,
+      specialization: ["Cardiologist"],
+      languages: ["English", "Hindi", "Bengali"],
+      email: "doctor@medicon.com",
+      phonenumber: "+91-9876543210",
+      address: "Apollo Hospital, Kolkata",
+      consultationFee: 800,
+      isVerified: true,
+      registrationId: "MED123456",
+      averageRating: 4.7,
+      totalReviews: 124,
+      geoLocation: {
+        coordinates: [88.3639, 22.5726],
+      },
+    });
+    setLoading(false);
+  }, [id, user]);
 
   const openModal = () => {
-    const userToken = localStorage.getItem("usertoken");
-    if (!userToken) {
+    const role = localStorage.getItem("role");
+    if (role !== "user") {
       toast.error("Please login to book appointment");
       return;
     }

@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ZegoUIKitPrebuilt } from "@zegocloud/zego-uikit-prebuilt";
 import { ArrowLeft } from "lucide-react";
 
 // Define the component as a named function instead of an arrow function
@@ -26,41 +25,16 @@ function VideoCall() {
   const myMeeting = async (element) => {
     if (!element) return;
 
-    try {
-      const appID = parseInt(import.meta.env.VITE_ZEG_APP_ID);
-      const serverSecret = import.meta.env.VITE_SERVER_SECRET;
-
-      if (!appID || !serverSecret) {
-        console.error("ZegoCloud credentials not found");
-        return;
-      }
-
-      const kitToken = ZegoUIKitPrebuilt.generateKitTokenForTest(
-        appID,
-        serverSecret,
-        appointmentId,
-        Date.now().toString(),
-        userName
-      );
-
-      // Create instance
-      const zc = ZegoUIKitPrebuilt.create(kitToken);
-
-      zc.joinRoom({
-        container: element,
-        sharedLinks: [
-          {
-            name: "Copy link",
-            url: `${window.location.origin}/videocall/${appointmentId}`,
-          },
-        ],
-        scenario: {
-          mode: ZegoUIKitPrebuilt.OneONoneCall,
-        },
-      });
-    } catch (error) {
-      console.error("Error initializing video call:", error);
-    }
+    element.innerHTML = `
+      <div style="height:100%;display:flex;align-items:center;justify-content:center;background:#f8fafc;">
+        <div style="text-align:center;padding:24px;background:white;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.08);max-width:500px;">
+          <h2 style="font-size:20px;font-weight:700;color:#2563eb;margin-bottom:10px;">Demo Video Consultation</h2>
+          <p style="color:#4b5563;margin-bottom:8px;">Room ID: ${appointmentId}</p>
+          <p style="color:#4b5563;margin-bottom:8px;">Participant: ${userName}</p>
+          <p style="color:#6b7280;font-size:14px;">This is a frontend-only mock call screen for demo presentation.</p>
+        </div>
+      </div>
+    `;
   };
 
   return (

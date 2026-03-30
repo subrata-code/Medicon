@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { Star } from "lucide-react";
-import axiosInstance from "../libs/axios";
 
 const Marquee = ({
   reviews = [],

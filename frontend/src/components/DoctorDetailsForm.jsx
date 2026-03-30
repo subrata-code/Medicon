@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { axiosInstance } from "../libs/axios";
 import toast from "react-hot-toast";
 
 const DoctorDetailsForm = ({ doctorData, refreshData }) => {
@@ -47,40 +46,17 @@ const DoctorDetailsForm = ({ doctorData, refreshData }) => {
     }
   };
 
-  const token = localStorage.getItem("doctortoken");
-
   const handleSave = async (e) => {
     e.preventDefault();
     try {
-      console.log("Submitting updated details:", details);
-      
-      const response = await axiosInstance.post(
-        "/api/v1/updateDetails",
-        details,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          withCredentials: true,
+      localStorage.setItem("demoDoctorDetails", JSON.stringify(details));
+      toast.success("Doctor details updated successfully");
+      setIsEditing(false);
+      setTimeout(() => {
+        if (refreshData) {
+          refreshData();
         }
-      );
-
-      if (response.status === 200) {
-        toast.success("Doctor details updated successfully");
-        setIsEditing(false);
-        
-        // Add a small delay before refreshing data to ensure DB operations complete
-        setTimeout(() => {
-          if (refreshData) {
-            console.log("Calling refresh function after update");
-            refreshData();
-          } else {
-            toast.error("Data updated but failed to reload");
-          }
-        }, 300);
-      } else {
-        toast.error("Failed to update doctor details");
-      }
+      }, 300);
     } catch (error) {
       console.log("error", error);
       toast.error("Error updating doctor details: " + (error.message || "Unknown error"));

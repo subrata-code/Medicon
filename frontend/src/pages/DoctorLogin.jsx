@@ -1,7 +1,5 @@
 import { HeartHandshake } from "lucide-react";
 import React, { useState } from "react";
-import { axiosInstance } from "../libs/axios.js";
-import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 
 function DoctorLogin() {
@@ -21,75 +19,40 @@ function DoctorLogin() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
+    // Fake demo login with hardcoded credentials
+    setTimeout(() => {
+      const { email, password } = formData;
 
-    try {
-      // First API call - Login
-      const response = await axiosInstance.post(
-        "/api/v1/login-doctor",
-        formData,
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-          withCredentials: true,
-        }
-      );
-
-      console.log("Login Response:", response.data);
-      const data = response.data;
-      const doctorId = data.data._id;
-
-      if (response.status === 200) {
-        try {
-          // Second API call - Update online status
-          const statusResponse = await axiosInstance.post(
-            "/api/v1/update-doctor-status",
-            {
-              doctorId,
-              isOnline: true,
-              isBusy: false,
-            }
-          );
-
-          console.log("Status Update Response:", statusResponse.data);
-
-          // Verify the update by fetching the doctor's current status
-          const verifyResponse = await axiosInstance.get(
-            `/api/v1/doctors/${doctorId}`
-          );
-          console.log("Doctor's Current Status:", {
-            isOnline: verifyResponse.data.data.isOnline,
-            isBusy: verifyResponse.data.data.isBusy,
-          });
-
-          if (statusResponse.data.status === "OK") {
-            toast.success("Login Successful");
-            localStorage.setItem("doctortoken", data.token);
-            localStorage.setItem("doctorId", doctorId);
-            navigate(`/doctorDashboard/${doctorId}`);
-          } else {
-            console.warn("Online status not updated:", statusResponse.data);
-            toast.warning("Logged in but status update failed");
-            navigate(`/doctorDashboard/${doctorId}`);
-          }
-        } catch (statusError) {
-          console.error(
-            "Error updating online status:",
-            statusError.response?.data || statusError
-          );
-          // Continue with login even if status update fails
-          toast.warning("Logged in but status update failed");
-          navigate(`/doctorDashboard/${doctorId}`);
-        }
-      } else {
-        toast.error("Login Failed");
+      if (email === "doctor@medicon.com" && password === "doctor123") {
+        localStorage.setItem("role", "doctor");
+        localStorage.setItem("doctorId", "demo-doctor");
+        alert("Login Successful");
+        navigate("/doctor");
+        setIsLoading(false);
+        return;
       }
-    } catch (error) {
-      console.error("Login Error:", error.response?.data || error);
-      toast.error(error.response?.data?.message || "An error occurred during login");
-    } finally {
+
+      const approved = JSON.parse(localStorage.getItem("approvedDoctors")) || [];
+      const match = approved.find(
+        (d) => d.email === email && d.password === password && d.status === "approved"
+      );
+      if (match) {
+        localStorage.setItem("role", "doctor");
+        localStorage.setItem("doctorId", String(match.id));
+        alert("Login Successful");
+        navigate("/doctor");
+      } else {
+        const pending = JSON.parse(localStorage.getItem("doctorRequests")) || [];
+        const waiting = pending.find((d) => d.email === email);
+        if (waiting) {
+          alert("Waiting for admin approval");
+        } else {
+          alert("Invalid credentials or account not approved");
+        }
+      }
+
       setIsLoading(false);
-    }
+    }, 1000);
   };
 
   return (
